@@ -2,6 +2,14 @@
 
 REST API reactiva para gestión de franquicias, sucursales y productos. Desarrollada como prueba técnica para Accenture.
 
+## URL en producción (AWS)
+
+```
+http://3.90.226.222:8080
+```
+
+Desplegada en **EC2 t3.micro** con imagen Docker desde **ECR**, conectada a **DynamoDB** en `us-east-1`. Infraestructura aprovisionada con **Terraform**.
+
 ## Stack tecnológico
 
 | Tecnología | Detalle |

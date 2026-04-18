@@ -48,16 +48,16 @@ resource "aws_ecr_repository" "franchise_api" {
   }
 }
 
-# ── IAM: App Runner acceso a ECR ─────────────────────────────────────────────
+# ── IAM: Rol para EC2 (acceso a ECR + DynamoDB) ───────────────────────────────
 
-resource "aws_iam_role" "apprunner_ecr_role" {
-  name = "apprunner-ecr-access-role"
+resource "aws_iam_role" "ec2_role" {
+  name = "franchise-api-ec2-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
       Effect    = "Allow"
-      Principal = { Service = "build.apprunner.amazonaws.com" }
+      Principal = { Service = "ec2.amazonaws.com" }
       Action    = "sts:AssumeRole"
     }]
   })
@@ -68,73 +68,105 @@ resource "aws_iam_role" "apprunner_ecr_role" {
   }
 }
 
-resource "aws_iam_role_policy_attachment" "apprunner_ecr_policy" {
-  role       = aws_iam_role.apprunner_ecr_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess"
+resource "aws_iam_role_policy_attachment" "ec2_ecr_policy" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
-# ── IAM: App Runner acceso a DynamoDB ────────────────────────────────────────
-
-resource "aws_iam_role" "apprunner_instance_role" {
-  name = "apprunner-instance-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect    = "Allow"
-      Principal = { Service = "tasks.apprunner.amazonaws.com" }
-      Action    = "sts:AssumeRole"
-    }]
-  })
-
-  tags = {
-    Project   = "franchise-api"
-    ManagedBy = "terraform"
-  }
-}
-
-resource "aws_iam_role_policy_attachment" "apprunner_dynamodb_policy" {
-  role       = aws_iam_role.apprunner_instance_role.name
+resource "aws_iam_role_policy_attachment" "ec2_dynamodb_policy" {
+  role       = aws_iam_role.ec2_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
 }
 
-# ── App Runner ────────────────────────────────────────────────────────────────
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "franchise-api-ec2-profile"
+  role = aws_iam_role.ec2_role.name
+}
 
-resource "aws_apprunner_service" "franchise_api" {
-  service_name = "franchise-api"
+# ── Security Group ────────────────────────────────────────────────────────────
 
-  source_configuration {
-    authentication_configuration {
-      access_role_arn = aws_iam_role.apprunner_ecr_role.arn
-    }
-    image_repository {
-      image_identifier      = "${aws_ecr_repository.franchise_api.repository_url}:latest"
-      image_repository_type = "ECR"
-      image_configuration {
-        port = "8080"
-        runtime_environment_variables = {
-          AWS_REGION          = var.aws_region
-          DYNAMODB_TABLE_NAME = var.table_name
-        }
-      }
-    }
-    auto_deployments_enabled = false
+resource "aws_security_group" "franchise_api" {
+  name        = "franchise-api-sg"
+  description = "Allow HTTP on 8080"
+
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
-  instance_configuration {
-    instance_role_arn = aws_iam_role.apprunner_instance_role.arn
-    cpu               = "256"
-    memory            = "512"
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags = {
+    Project   = "franchise-api"
+    ManagedBy = "terraform"
+  }
+}
+
+# ── AMI más reciente de Amazon Linux 2023 ─────────────────────────────────────
+
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["al2023-ami-*-x86_64"]
+  }
+}
+
+# ── EC2 t3.micro (free tier eligible) ────────────────────────────────────────
+
+resource "aws_instance" "franchise_api" {
+  ami                         = data.aws_ami.amazon_linux.id
+  instance_type               = "t3.micro"
+  iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
+  vpc_security_group_ids      = [aws_security_group.franchise_api.id]
+  associate_public_ip_address = true
+
+  user_data = <<-EOF
+    #!/bin/bash
+    yum update -y
+    yum install -y docker
+    systemctl start docker
+    systemctl enable docker
+
+    aws ecr get-login-password --region ${var.aws_region} | \
+      docker login --username AWS --password-stdin ${aws_ecr_repository.franchise_api.repository_url}
+
+    docker pull ${aws_ecr_repository.franchise_api.repository_url}:latest
+
+    docker run -d \
+      -p 8080:8080 \
+      -e AWS_REGION=${var.aws_region} \
+      -e DYNAMODB_TABLE_NAME=${var.table_name} \
+      --name franchise-api \
+      --restart always \
+      ${aws_ecr_repository.franchise_api.repository_url}:latest
+  EOF
+
+  tags = {
+    Name        = "franchise-api"
     Environment = var.environment
     Project     = "franchise-api"
     ManagedBy   = "terraform"
   }
 
   depends_on = [
-    aws_iam_role_policy_attachment.apprunner_ecr_policy,
-    aws_iam_role_policy_attachment.apprunner_dynamodb_policy
+    aws_iam_role_policy_attachment.ec2_ecr_policy,
+    aws_iam_role_policy_attachment.ec2_dynamodb_policy
   ]
 }

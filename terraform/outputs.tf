@@ -13,7 +13,7 @@ output "ecr_repository_url" {
   value       = aws_ecr_repository.franchise_api.repository_url
 }
 
-output "apprunner_service_url" {
-  description = "Public URL of the App Runner service"
-  value       = "https://${aws_apprunner_service.franchise_api.service_url}"
+output "app_url" {
+  description = "Public URL of the Franchise API"
+  value       = "http://${aws_instance.franchise_api.public_ip}:8080"
 }
