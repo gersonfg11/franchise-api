@@ -1,0 +1,382 @@
+{
+  "info": {
+    "name": "Franchise API",
+    "description": "Colección de pruebas para la API de gestión de franquicias - Prueba Técnica Accenture",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "franchiseId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "branchId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Franquicias",
+      "item": [
+        {
+          "name": "Agregar franquicia",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Retorna id y name', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.id).to.be.a('string');",
+                  "    pm.expect(body.name).to.eql('McDonalds');",
+                  "    pm.expect(body.branches).to.eql([]);",
+                  "    pm.collectionVariables.set('franchiseId', body.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"McDonalds\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/franchises",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "franchises"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar nombre de franquicia",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Nombre actualizado', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.name).to.eql('McDonalds Colombia');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"McDonalds Colombia\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/franchises/{{franchiseId}}/name",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "franchises", "{{franchiseId}}", "name"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sucursales",
+      "item": [
+        {
+          "name": "Agregar sucursal",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Retorna id y name', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.id).to.be.a('string');",
+                  "    pm.expect(body.name).to.eql('Sucursal Norte');",
+                  "    pm.expect(body.products).to.eql([]);",
+                  "    pm.collectionVariables.set('branchId', body.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Sucursal Norte\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/franchises/{{franchiseId}}/branches",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "franchises", "{{franchiseId}}", "branches"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar nombre de sucursal",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Nombre actualizado', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.name).to.eql('Sucursal Norte Centro');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Sucursal Norte Centro\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/franchises/{{franchiseId}}/branches/{{branchId}}/name",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "franchises", "{{franchiseId}}", "branches", "{{branchId}}", "name"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Productos",
+      "item": [
+        {
+          "name": "Agregar producto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Retorna producto con stock', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.id).to.be.a('string');",
+                  "    pm.expect(body.name).to.eql('Big Mac');",
+                  "    pm.expect(body.stock).to.eql(100);",
+                  "    pm.collectionVariables.set('productId', body.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Big Mac\",\n    \"stock\": 100\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/franchises/{{franchiseId}}/branches/{{branchId}}/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "franchises", "{{franchiseId}}", "branches", "{{branchId}}", "products"]
+            }
+          }
+        },
+        {
+          "name": "Modificar stock de producto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Stock actualizado', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.stock).to.eql(250);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"stock\": 250\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/franchises/{{franchiseId}}/branches/{{branchId}}/products/{{productId}}/stock",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "franchises", "{{franchiseId}}", "branches", "{{branchId}}", "products", "{{productId}}", "stock"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar nombre de producto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Nombre actualizado', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.name).to.eql('McChicken');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"McChicken\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/franchises/{{franchiseId}}/branches/{{branchId}}/products/{{productId}}/name",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "franchises", "{{franchiseId}}", "branches", "{{branchId}}", "products", "{{productId}}", "name"]
+            }
+          }
+        },
+        {
+          "name": "Producto con mayor stock por sucursal",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna array con top products', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.be.an('array');",
+                  "    if (body.length > 0) {",
+                  "        pm.expect(body[0]).to.have.all.keys('branchId', 'branchName', 'productId', 'productName', 'stock');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/franchises/{{franchiseId}}/top-products",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "franchises", "{{franchiseId}}", "top-products"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar producto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/franchises/{{franchiseId}}/branches/{{branchId}}/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "franchises", "{{franchiseId}}", "branches", "{{branchId}}", "products", "{{productId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Errores (casos negativos)",
+      "item": [
+        {
+          "name": "Franquicia no encontrada",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Sucursal Test\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/franchises/id-inexistente/branches",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "franchises", "id-inexistente", "branches"]
+            }
+          }
+        },
+        {
+          "name": "Body vacío - validación",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/franchises",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "franchises"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
